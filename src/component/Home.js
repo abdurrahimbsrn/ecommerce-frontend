@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ShoppingBag,
-  Heart,
   ShoppingCart,
   Star,
   Truck,
@@ -81,14 +80,6 @@ const Home = () => {
               <p className="text-xl mb-8 text-blue-100">
                 Teknolojiden modaya, ev dekorasyonundan spora kadar aradığınız her şey burada!
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                  Alışverişe Başla
-                </button>
-                <button className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
-                  Kampanyaları Gör
-                </button>
-              </div>
             </div>
             <div className="text-8xl text-center lg:text-right opacity-20 lg:opacity-100">
               🛍️

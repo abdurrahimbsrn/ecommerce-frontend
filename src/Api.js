@@ -138,7 +138,7 @@ export const fetchAddCategory = async (yeniKategori, tokenHeader) => {
         };
 
         // URL'ye '{id}' parametresini ekliyoruz
-        const response = await fetch(`${BASE_URL}/urun/kategori`, {
+        const response = await fetch(`${BASE_URL}/kategori/add`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(yeniKategori)
@@ -181,7 +181,7 @@ export const fetchAllCategories = async (tokenHeader) => {
             'Authorization': tokenHeader
         };
 
-        const response = await fetch(`${BASE_URL}/urun/kategori/all`, { headers });
+        const response = await fetch(`${BASE_URL}/kategori/all`, { headers });
 
         if (!response.ok) {
             const errorStatus = response.status;
@@ -202,6 +202,41 @@ export const fetchAllCategories = async (tokenHeader) => {
 
     } catch (error) {
         console.error("fetchKategori API çağrısı sırasında bir hata oluştu:", error.message);
+        return { error: true, status: 500, message: "Sunucuya bağlanırken bir hata oluştu." };
+    }
+};
+
+export const fetchAllUrun = async (tokenHeader) => {
+    try {
+        if (!tokenHeader) {
+            return { error: true, status: 401, message: "Yetkilendirme başlığı bulunamadı." };
+        }
+
+        const headers = {
+            'Authorization': tokenHeader
+        };
+
+        const response = await fetch(`${BASE_URL}/urun/all`, { headers });
+
+        if (!response.ok) {
+            const errorStatus = response.status;
+            let errorMessage = `Sunucu hatası: ${errorStatus}`;
+
+            if (errorStatus === 401) {
+                errorMessage = "Giriş yapmanız gerekiyor. Token süresi dolmuş veya geçersiz.";
+            } else if (errorStatus === 403) {
+                errorMessage = "Bu kaynağa erişim yetkiniz yok.";
+            } else if (errorStatus === 404) {
+                errorMessage = "İstenen kaynak bulunamadı.";
+            }
+            return { error: true, status: errorStatus, message: errorMessage };
+        }
+
+        const data = await response.json();
+        return { error: false, data: data };
+
+    } catch (error) {
+        console.error("fetchKullanici API çağrısı sırasında bir hata oluştu:", error.message);
         return { error: true, status: 500, message: "Sunucuya bağlanırken bir hata oluştu." };
     }
 };

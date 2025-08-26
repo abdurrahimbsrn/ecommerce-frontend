@@ -213,8 +213,8 @@ const CategoriesTab = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm text-gray-600 max-w-xs" title={category.description}>
-                                            {category.description.length > 50
-                                                ? `${category.description.substring(0, 50)}...`
+                                            {category.description.length > 500
+                                                ? `${category.description.substring(0, 500)}...`
                                                 : category.description
                                             }
                                         </div>
@@ -320,8 +320,7 @@ function CategoryForm({ initialData, onSave, onCancel, loading, setLoading }) {
     const [formData, setFormData] = useState({
         name: initialData?.name || "",
         description: initialData?.description || "",
-        icon: initialData?.icon || "",
-        status: initialData?.status || "active"
+        icon: initialData?.icon || ""
     });
     const [errors, setErrors] = useState({});
 
