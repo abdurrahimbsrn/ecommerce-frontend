@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchAllKullanici } from '../../Api'; // fetchAllKullanici'yi import et
+import { fetchAllKullanici } from '../../APIs/CategoriApi.js'; // fetchAllKullanici'yi import et
 import KeycloakService from '../../KeycloakService.js';
 import {
     Plus,

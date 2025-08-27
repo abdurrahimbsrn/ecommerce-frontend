@@ -1,11 +1,10 @@
-// src/Api.js
-// Bu dosyayı, fetchKullanici'nin bulunduğu Api.js dosyanızla birleştirin.
+import KeycloakService from '../KeycloakService';
 
-// BASE_URL'inizin tanımlı olduğundan emin olun
+
+
 const BASE_URL = 'http://localhost:8081'; // API Gateway URL'iniz
 
 // KeycloakService'i import edin (eğer tokenHeader'ı doğrudan KeycloakService'ten alıyorsanız)
-//import KeycloakService from './KeycloakService';
 
 export const fetchKullanici = async (tokenHeader) => {
     try {
@@ -93,6 +92,7 @@ export const updateKullanici = async (id, userData, tokenHeader) => {
 
 export const fetchAllKullanici = async (tokenHeader) => {
     try {
+         //const tokenHeader = KeycloakService.getAuthorizationHeader();
         if (!tokenHeader) {
             return { error: true, status: 401, message: "Yetkilendirme başlığı bulunamadı." };
         }
@@ -126,12 +126,12 @@ export const fetchAllKullanici = async (tokenHeader) => {
     }
 };
 // updateKullanici fonksiyonu şimdi bir 'id' parametresi alıyor
-export const fetchAddCategory = async (yeniKategori, tokenHeader) => {
+export const fetchAddCategory = async (yeniKategori) => {
     try {
+        const tokenHeader = KeycloakService.getAuthorizationHeader();
         if (!tokenHeader) {
             return { error: true, status: 401, message: "Yetkilendirme başlığı bulunamadı." };
         }
-
         const headers = {
             'Authorization': tokenHeader,
             'Content-Type': 'application/json'
@@ -203,6 +203,42 @@ export const fetchAllCategories = async (tokenHeader) => {
     } catch (error) {
         console.error("fetchKategori API çağrısı sırasında bir hata oluştu:", error.message);
         return { error: true, status: 500, message: "Sunucuya bağlanırken bir hata oluştu." };
+    }
+};
+export const fetchDeleteCategory = async (id, tokenHeader) => {
+    try {
+        if (!tokenHeader) {
+            return { error: true, status: 401, message: "Yetkilendirme başlığı bulunamadı." };
+        }
+        if (!id) {
+            return { error: true, status: 400, message: "Kategori ID'si eksik. Silme işlemi yapılamaz." };
+        }
+        const headers = {
+            'Authorization': tokenHeader
+        };
+        const response = await fetch(`${BASE_URL}/kategori/${id}`, {
+            method: 'DELETE',
+            headers: headers
+        });
+        if (!response.ok) {
+            const errorStatus = response.status;
+            let errorMessage = `Kategori silme hatası: ${errorStatus}`;
+            if (errorStatus === 401) {
+                errorMessage = "Giriş yapmanız gerekiyor. Token süresi dolmuş veya geçersiz.";
+            } else if (errorStatus === 403) {
+                errorMessage = "Bu işlemi yapmaya yetkiniz yok.";
+            } else if (errorStatus === 404) {
+                errorMessage = "Kategori bulunamadı.";
+            } else if (errorStatus === 400) {
+                const errorData = await response.json();
+                errorMessage = errorData.message || "Geçersiz istek.";
+            }
+            return { error: true, status: errorStatus, message: errorMessage };
+        }
+        return { error: false, message: "Kategori başarıyla silindi." };
+    } catch (error) {
+        console.error("fetchDeleteCategory API çağrısı sırasında bir hata oluştu:", error.message);
+        return { error: true, status: 500, message: "Kategori silinirken bir bağlantı hatası oluştu." };
     }
 };
 

@@ -151,204 +151,9 @@ const AdminPanel = () => {
         }
     };
 
-    const handleProductSubmit = (productData) => {
-        if (selectedProduct) {
-            // Güncelleme
-            setProducts(products.map(p =>
-                p.id === selectedProduct.id
-                    ? { ...p, ...productData, id: selectedProduct.id }
-                    : p
-            ));
-        } else {
-            // Yeni ekleme
-            const newProduct = {
-                ...productData,
-                id: Math.max(...products.map(p => p.id)) + 1,
-                createdAt: new Date().toISOString().split('T')[0]
-            };
-            setProducts([...products, newProduct]);
-        }
-        setShowProductModal(false);
-        setSelectedProduct(null);
-    };
-
-    const handleDeleteProduct = (id) => {
-        if (window.confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
-            setProducts(products.filter(p => p.id !== id));
-        }
-    };
-
-    const ProductModal = ({ isOpen, onClose, product, onSubmit }) => {
-        const [formData, setFormData] = useState(
-            product || {
-                name: '',
-                category: '',
-                price: '',
-                stock: '',
-                status: 'active',
-                image: '📦',
-                description: ''
-            }
-        );
-
-        useEffect(() => {
-            if (product) {
-                setFormData(product);
-            }
-        }, [product]);
-
-        const handleSubmit = (e) => {
-            e.preventDefault();
-            onSubmit(formData);
-        };
+   
 
 
-
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-semibold text-gray-900">
-                                {product ? 'Ürün Düzenle' : 'Yeni Ürün Ekle'}
-                            </h2>
-                            <button
-                                onClick={onClose}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Ürün Adı *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Ürün adını girin"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Kategori *
-                                </label>
-                                <select
-                                    required
-                                    value={formData.category}
-                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="">Kategori seçin</option>
-                                    <option value="Elektronik">Elektronik</option>
-                                    <option value="Bilgisayar">Bilgisayar</option>
-                                    <option value="Aksesuar">Aksesuar</option>
-                                    <option value="Giyim">Giyim</option>
-                                    <option value="Ev & Yaşam">Ev & Yaşam</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Fiyat (₺) *
-                                </label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="0"
-                                    step="0.01"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="0.00"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Stok Miktarı *
-                                </label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="0"
-                                    value={formData.stock}
-                                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="0"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Durum
-                                </label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="active">Aktif</option>
-                                    <option value="inactive">Pasif</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Ürün Emoji
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.image}
-                                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="📦"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ürün Açıklaması
-                            </label>
-                            <textarea
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                rows={4}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Ürün hakkında detaylı bilgi..."
-                            />
-                        </div>
-
-                        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
-                            >
-                                İptal
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center"
-                            >
-                                <Save className="w-4 h-4 mr-2" />
-                                {product ? 'Güncelle' : 'Ekle'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        );
-    };
 
 
 
@@ -386,12 +191,7 @@ const AdminPanel = () => {
                     getStatusText={getStatusText}
                 />}
                 {activeTab === 'products' && <ProductsTab
-                    setSelectedProduct={setSelectedProduct}
-                    setShowProductModal={setShowProductModal}
-                    products={products}
-                    getStatusColor={getStatusColor}
-                    getStatusText={getStatusText}
-                    handleDeleteProduct={handleDeleteProduct}
+                    
 
                 />}
                 {activeTab === 'orders' && <OrdersTab
@@ -404,19 +204,6 @@ const AdminPanel = () => {
 
                 }
             </main>
-
-            {/* Ürün Modalı */}
-            {showProductModal && (
-                <ProductModal
-                    isOpen={showProductModal}
-                    onClose={() => {
-                        setShowProductModal(false);
-                        setSelectedProduct(null);
-                    }}
-                    product={selectedProduct}
-                    onSubmit={handleProductSubmit}
-                />
-            )}
         </div>
     );
 }

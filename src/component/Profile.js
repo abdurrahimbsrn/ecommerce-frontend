@@ -1,6 +1,6 @@
 // src/component/Profile.js
 import React, { useState, useEffect } from 'react';
-import { fetchKullanici, updateKullanici } from '../Api'; // updateKullanici'yi import ettik
+import { fetchKullanici, updateKullanici } from '../APIs/CategoriApi'; // updateKullanici'yi import ettik
 
 // Alt bileşenleri import et
 import ProfileSidebar from './ProfileTabs/ProfileSidebar';
