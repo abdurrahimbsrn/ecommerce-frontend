@@ -1,383 +1,245 @@
-import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Mail, Lock, ShoppingBag, User, X, Loader } from 'lucide-react';
+// src/pages/Cart.js (Güncellenmiş)
 
-// Sepet sayfası bileşeni
-const CartPage = () => {
-  // Sahte sepet verisi
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: 'T-shirt', price: 25.00, quantity: 2 },
-    { id: 2, name: 'Jeans', price: 50.00, quantity: 1 },
-    { id: 3, name: 'Sneakers', price: 80.00, quantity: 1 },
-  ]);
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useCart } from '../CartHook'; // useCart hook'unu import et
 
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const tax = subtotal * 0.18; // %18 KDV
-  const total = subtotal + tax;
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  ArrowLeft,
+  ShoppingBag,
+  CreditCard,
+  Truck,
+  Shield,
+  Tag
+} from 'lucide-react';
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-3xl font-bold text-gray-900 mb-6">Sepetim</h2>
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="space-y-4">
-          {cartItems.length > 0 ? (
-            cartItems.map(item => (
-              <div key={item.id} className="flex items-center justify-between border-b pb-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900">{item.name}</h4>
-                  <p className="text-gray-600 text-sm">{item.quantity} adet</p>
-                </div>
-                <p className="font-semibold text-gray-800">${(item.price * item.quantity).toFixed(2)}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500 text-center py-4">Sepetinizde ürün bulunmamaktadır.</p>
-          )}
-        </div>
-        <div className="mt-6 border-t pt-6 space-y-2">
-          <div className="flex justify-between font-medium text-gray-700">
-            <span>Ara Toplam:</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-medium text-gray-700">
-            <span>KDV:</span>
-            <span>${tax.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg text-gray-900">
-            <span>Toplam:</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
-        </div>
-        <button className="mt-6 w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition-colors">
-          Ödeme Yap
-        </button>
-      </div>
-    </div>
-  );
-};
+const Cart = () => {
+  const navigate = useNavigate();
+  const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal } = useCart(); // cartTotal'ı hook'tan al
 
-
-// App bileşeni artık tek bir yerden export ediliyor
-export default function App() {
-  const [currentPage, setCurrentPage] = useState('home'); // Sayfa yönlendirmesi için yeni state
-  const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '',
-    confirmPassword: ''
-  });
-  const [message, setMessage] = useState(null); // Mesaj kutusu için durum
-  const [authenticated, setAuthenticated] = useState(false); // Keycloak doğrulama durumu
-  const [loading, setLoading] = useState(false); // Yüklenme durumu için yeni state
-
-  // Kategori verileri için yeni state'ler
-  const [categories, setCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [categoriesError, setCategoriesError] = useState(null);
-
-  // Kategorilere atanacak renk paleti
-  const categoryColors = [
-    'bg-blue-200 text-blue-800', 'bg-green-200 text-green-800', 'bg-purple-200 text-purple-800', 
-    'bg-orange-200 text-orange-800', 'bg-red-200 text-red-800', 'bg-teal-200 text-teal-800'
-  ];
-
-  // Keycloak'u sadece bir kere başlatmak için useEffect kullanılıyor
-  useEffect(() => {
-    // Sahte Keycloak başlatma işlemi
-    setTimeout(() => {
-      setAuthenticated(true);
-    }, 1000);
-
-    // Kategori verilerini çekmek için API isteği
-    const fetchCategories = async () => {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-      try {
-        // Bu URL'i kendi arka uç kategoriler API'nizin adresiyle değiştirin
-        const response = await fetch('http://localhost:8080/api/kategoriler');
-        if (!response.ok) {
-          throw new Error('Kategori verileri çekilirken bir hata oluştu.');
-        }
-        const data = await response.json();
-        // Backendden gelen KategoriDto'daki alanları kullanıyoruz
-        const formattedData = data.map(cat => ({
-          id: cat.id,
-          name: cat.kategoriAd,
-          description: cat.aciklama,
-          emoji: cat.emoji
-        }));
-        setCategories(formattedData);
-      } catch (error) {
-        setCategoriesError(error.message);
-        console.error('Kategori verilerini çekerken hata:', error);
-      } finally {
-        setCategoriesLoading(false);
-      }
-    };
-
-    fetchCategories();
-
-  }, []); // Bağımlılık dizisi boş olduğu için sadece ilk render'da çalışır
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const navigateToHome = () => {
+    navigate('/');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); // Yüklenme durumunu başlat
-    setMessage(null); // Önceki mesajı temizle
+  const navigateToCheckout = () => {
+    console.log('Navigating to checkout page');
+    navigate('/checkout');
+  };
+ 
+  // Sepet toplamlarını hesapla
+  // Bu hesaplamalar artık useCart hook'u içinde yapıldığı için daha basit
+  const subtotal = cartTotal; // useCart'tan gelen cartTotal'ı kullan
+  const shipping = subtotal > 500 ? 0 : 50;
+  const total = subtotal + shipping; // Toplamı doğru hesapla
 
-    // Burası API'nizin gerçek adresi olmalı.
-    const endpoint = isLogin ? 'http://localhost:8080/api/auth/login' : 'http://localhost:8080/api/auth/register';
+  const removeItem = (id) => {
+    removeFromCart(id);
+  };
 
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      alert('Sepetiniz boş!');
 
-      if (response.ok) {
-        const result = await response.json();
-        const successMessage = isLogin ? 'Giriş başarılı!' : 'Kayıt başarılı!';
-        setMessage({ text: successMessage, type: 'success' });
-        console.log('API yanıtı:', result);
-      } else {
-        const errorData = await response.json();
-        const errorMessage = isLogin ? 'Giriş başarısız oldu.' : 'Kayıt başarısız oldu.';
-        setMessage({ text: errorMessage + ' ' + (errorData.message || ''), type: 'error' });
-        console.error('API hatası:', errorData);
-      }
-    } catch (error) {
-      console.error('İstek sırasında bir hata oluştu:', error);
-      setMessage({ text: 'Sunucuya bağlanırken bir hata oluştu.', type: 'error' });
-    } finally {
-      setLoading(false); // Yüklenme durumunu bitir
+      return;
     }
+    else{
+      navigateToCheckout();
+    }
+    navigateToCheckout();
   };
 
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-    setFormData({ email: '', password: '', name: '', confirmPassword: '' });
-  };
-  
-  // Mesaj kutusunu kapatmak için fonksiyon
-  const handleCloseMessage = () => {
-    setMessage(null);
-  };
-
-  // Eğer Keycloak doğrulaması bekleniyorsa yükleme ekranı göster
-  if (!authenticated && authenticated !== false) {
+  if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 text-lg">Yükleniyor...</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* ... Boş sepet görünümü ... */}
+        <div className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center">
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Alışverişe Devam Et
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-md mx-auto pt-20 px-4 text-center">
+          <div className="bg-white rounded-2xl p-12 shadow-lg">
+            <div className="text-8xl mb-6">🛒</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Sepetiniz Boş</h2>
+            <p className="text-gray-600 mb-8">Harika ürünlerimizi keşfetmek için alışverişe başlayın!</p>
+            <button
+              onClick={navigateToHome}
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-flex items-center"
+            >
+              <ShoppingBag className="w-5 h-5 mr-2" />
+              Alışverişe Başla
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-      {/* Basit yönlendirme için navigasyon */}
-      <nav className="flex justify-center p-4">
-        <button onClick={() => setCurrentPage('home')} className="px-4 py-2 mx-2 rounded-lg bg-gray-200 hover:bg-gray-300">
-          Anasayfa
-        </button>
-        <button onClick={() => setCurrentPage('cart')} className="px-4 py-2 mx-2 rounded-lg bg-gray-200 hover:bg-gray-300">
-          Sepetim
-        </button>
-      </nav>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={navigateToHome}
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Alışverişe Devam Et
+            </button>
+            <div className="flex items-center space-x-2">
+              <ShoppingCart className="w-6 h-6 text-blue-600" />
+              <h1 className="text-2xl font-bold text-gray-900">Sepetim</h1>
+              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium">
+                {cartItems.length}
+              </span>
+            </div>
+            <button
+              onClick={clearCart}
+              className="text-red-600 hover:text-red-700 transition-colors text-sm font-medium"
+            >
+              Sepeti Temizle
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {/* Sayfa içeriği */}
-      {currentPage === 'home' ? (
-        <>
-          {/* Diğer bileşenler buraya gelebilir */}
-          <div className="flex items-center justify-center">
-            <div className="w-full max-w-md">
-              {/* Logo */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4 shadow-lg">
-                  <ShoppingBag className="w-8 h-8 text-white" />
-                </div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">ShopZone</h1>
-                <p className="text-gray-600">
-                  {isLogin ? 'Hesabınıza giriş yapın' : 'Yeni hesap oluşturun'}
-                </p>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Sepetinizdeki Ürünler</h2>
 
-              {/* Mesaj Kutusu */}
-              {message && (
-                <div className={`bg-${message.type === 'success' ? 'green' : 'red'}-100 border-l-4 border-${message.type === 'success' ? 'green' : 'red'}-500 text-${message.type === 'success' ? 'green' : 'red'}-700 p-4 rounded-lg mb-4 flex items-center justify-between shadow-md`} role="alert">
-                  <p>{message.text}</p>
-                  <button onClick={handleCloseMessage} className={`text-${message.type === 'success' ? 'green' : 'red'}-700 hover:text-${message.type === 'success' ? 'green' : 'red'}-900`}>
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
+              <div className="space-y-6">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                    {/* Product Image */}
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center text-3xl">
+                      {"🏷️"}
+                    </div>
 
-              {/* Form */}
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {!isLogin && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-2">İsim Soyisim</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          placeholder="Adınızı girin"
-                        />
+                    {/* Product Info */}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{item.ad}</h3>
+                      <p className="text-gray-600 text-sm">{item.aciklama}</p>
+                      <div className="flex items-center mt-2">
+                        <Tag className="w-4 h-4 text-gray-400 mr-1" />
+                        <span className="text-xs text-gray-500">{item.kategori}</span>
                       </div>
                     </div>
-                  )}
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">E-posta</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="ornek@email.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Şifre</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        name="password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="Şifrenizi girin"
-                      />
+                    {/* Quantity Controls */}
+                    <div className="flex items-center space-x-2">
                       <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        onClick={() => updateQuantity(item.id, Number(item.miktar) - 1)} // Miktarı sayıya dönüştür
+                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-12 text-center font-semibold">{item.miktar}</span> {/* miktar olarak güncellendi */}
+                      <button
+                        onClick={() => updateQuantity(item.id, Number(item.miktar) + 1)} // Miktarı sayıya dönüştür
+                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                  </div>
 
-                  {!isLogin && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-2">Şifre Tekrar</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handleInputChange}
-                          className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          placeholder="Şifrenizi tekrar girin"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
+                    {/* Price */}
+                    <div className="text-right">
+                      <div className="font-bold text-lg text-gray-900">
+                        {(Number(item.fiyat) * Number(item.miktar)).toLocaleString('tr-TR')}₺
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {Number(item.fiyat).toLocaleString('tr-TR')}₺ / adet
                       </div>
                     </div>
-                  )}
 
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all"
-                    disabled={loading} // Yüklenirken butonu devre dışı bırak
-                  >
-                    {loading ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <Loader className="animate-spin w-5 h-5" />
-                        <span>Yükleniyor...</span>
-                      </div>
-                    ) : (
-                      isLogin ? 'Giriş Yap' : 'Hesap Oluştur'
-                    )}
-                  </button>
-                </form>
-
-                <div className="mt-6 text-center">
-                  <p className="text-gray-600">
-                    {isLogin ? 'Hesabınız yok mu?' : 'Zaten hesabınız var mı?'}
+                    {/* Remove Button */}
                     <button
-                      onClick={toggleMode}
-                      className="ml-2 text-blue-600 font-medium hover:text-blue-800"
+                      onClick={() => removeItem(item.id)}
+                      className="text-red-500 hover:text-red-700 transition-colors p-2"
                     >
-                      {isLogin ? 'Kayıt ol' : 'Giriş yap'}
+                      <Trash2 className="w-5 h-5" />
                     </button>
-                  </p>
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Dinamik Kategori Bölümü */}
-          <section className="py-16 bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Kategoriler</h2>
-                <p className="text-gray-600 text-lg">Aradığınız ürünü kolayca bulun</p>
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Sipariş Özeti</h2>
+
+              {/* Price Breakdown */}
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex justify-between text-gray-600">
+                  <span>Ara Toplam</span>
+                  <span>{subtotal.toLocaleString('tr-TR')}₺</span>
+                </div>
+
+                <div className="flex justify-between text-gray-600">
+                  <span className="flex items-center">
+                    <Truck className="w-4 h-4 mr-1" />
+                    Kargo
+                  </span>
+                  <span>{shipping === 0 ? 'Ücretsiz' : `${shipping}₺`}</span>
+                </div>
+
+                <div className="border-t pt-3">
+                  <div className="flex justify-between text-lg font-bold text-gray-900">
+                    <span>Toplam</span>
+                    <span>{total.toLocaleString('tr-TR')}₺</span>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                {categoriesLoading ? (
-                  <div className="col-span-full text-center py-8">
-                    <Loader className="animate-spin mx-auto w-12 h-12 text-gray-400" />
-                    <p className="mt-4 text-gray-500">Kategoriler yükleniyor...</p>
-                  </div>
-                ) : categoriesError ? (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-red-500">Hata: Kategoriler yüklenemedi. Lütfen API'nizin çalıştığından emin olun.</p>
-                  </div>
-                ) : categories.length === 0 ? (
-                  <div className="col-span-full text-center py-8">
-                    <p className="text-gray-500">Henüz kategori bulunmuyor.</p>
-                  </div>
-                ) : (
-                  categories.map((category, index) => (
-                    <div
-                      key={category.id}
-                      className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
-                    >
-                      <div className={`w-16 h-16 ${categoryColors[index % categoryColors.length]} rounded-full flex items-center justify-center mx-auto mb-4 text-2xl`}>
-                        {category.emoji}
-                      </div>
-                      <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
-                      <p className="text-gray-500 text-sm">{category.description}</p>
-                    </div>
-                  ))
-                )}
+
+              {/* Security Badge */}
+              <div className="mt-4 flex items-center justify-center text-gray-500 text-sm">
+                <Shield className="w-4 h-4 mr-2" />
+                <span>Güvenli SSL ile korumalı ödeme</span>
               </div>
+
+              {/* Checkout Button */}
+              <button
+                onClick={handleCheckout}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 mt-6 flex items-center justify-center space-x-2"
+              >
+                <CreditCard className="w-5 h-5" />
+                <span>Ödemeye Geç</span>
+              </button>
+
+              {/* Continue Shopping */}
+              <button
+                onClick={navigateToHome}
+                className="w-full border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors mt-3 flex items-center justify-center space-x-2"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span>Alışverişe Devam Et</span>
+              </button>
             </div>
-          </section>
-        </>
-      ) : (
-        <CartPage />
-      )}
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Cart;

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'; // Navigation için eklendi
 import KeycloakService from '../KeycloakService';
 import { fetchAllCategories } from '../APIs/CategoriApi';
 import { fetchAllProducts } from '../APIs/ProductApi';
+import { useCart } from '../CartHook'; // Hook'u import edin
+
 import {
   ShoppingBag,
   ShoppingCart,
@@ -14,6 +16,9 @@ import {
 } from 'lucide-react';
 
 const Home = () => {
+  const { addToCart } = useCart();
+  const [quantity, setQuantity] = useState(1);
+
   const navigate = useNavigate(); // Navigation hook'u eklendi
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -67,6 +72,12 @@ const Home = () => {
     navigate('/products');
   };
 
+  const handleAddToCart = (product) => {
+    // addToCart fonksiyonunu çağırarak ürünü sepete ekle
+    addToCart(product, quantity);
+    alert(`${product.ad} sepete eklendi!`);
+  };
+
   const features = [
     {
       icon: Truck,
@@ -102,13 +113,7 @@ const Home = () => {
               <p className="text-xl mb-8 text-blue-100">
                 Teknolojiden modaya, ev dekorasyonundan spora kadar aradığınız her şey burada!
               </p>
-              <button 
-                onClick={handleViewAllProducts}
-                className="bg-yellow-400 text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition-colors inline-flex items-center"
-              >
-                Alışverişe Başla
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
+
             </div>
             <div className="text-8xl text-center lg:text-right opacity-20 lg:opacity-100">
               🛍️
@@ -143,7 +148,7 @@ const Home = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Kategoriler</h2>
             <p className="text-gray-600 text-lg">Aradığınız ürünü kolayca bulun</p>
           </div>
-          
+
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -186,7 +191,7 @@ const Home = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Öne Çıkan Ürünler</h2>
               <p className="text-gray-600">En popüler ve en çok satılan ürünler</p>
             </div>
-            <button 
+            <button
               onClick={handleViewAllProducts}
               className="flex items-center text-blue-600 font-semibold hover:text-blue-700 transition-colors"
             >
@@ -230,12 +235,12 @@ const Home = () => {
                     </span>
                   </div>
 
-                  <button 
+                  <button
                     className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={product.mevcutStok === 0}
                     onClick={(e) => {
                       e.stopPropagation(); // Ürün kartına tıklanmasını engeller
-                      // Sepete ekleme fonksiyonu burada çalışacak
+                      handleAddToCart(product);
                       console.log('Sepete eklendi:', product.id);
                     }}
                   >

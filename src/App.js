@@ -9,6 +9,7 @@ import CategoryProducts from './component/CategoryProducts';
 import Favorites from "./component/Home.js"; // Muhtemelen ayrı bir Favorites bileşeni olmalı
 import Search from "./component/Home.js";     // Muhtemelen ayrı bir Search bileşeni olmalı
 import KeycloakService from './KeycloakService.js';
+import CheckoutPage from './component/Checout.js';
 //import AdminPanel from "./component/Admin.js"
 import axios from 'axios';
 import AdminPanel from './component/Admin.js';
@@ -170,8 +171,9 @@ function AppRouter(props) {
         {/* Normal sayfalar */}
         <Route element={<MainLayout {...props} />}>
           <Route path="/" element={<Home />} />
+          <Route path="/checkout" element={<CheckoutPage getHeadersToken={KeycloakService.getAuthorizationHeader()}/>} />
           <Route path="/cart" element={<Cart />} />
-            <Route path="/category/:categoryId" element={<CategoryProducts />} />
+          <Route path="/category/:categoryId" element={<CategoryProducts />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/search" element={<Search searchQuery={props.searchQuery} />} />
           <Route path="/profile" element={
