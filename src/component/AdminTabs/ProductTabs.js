@@ -20,9 +20,7 @@ const ProductsTab = () => {
 
     const loadCategories = async () => {
         try {
-            // API çağrısı burada olacak
-            const tokenHeader = KeycloakService.getAuthorizationHeader();
-            const result = await fetchAllCategories(tokenHeader);
+            const result = await fetchAllCategories();
             if (result.error) {
                 alert('Kategoriler yüklenemedi: ' + result.message);
                 return;

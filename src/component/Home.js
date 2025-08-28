@@ -1,4 +1,8 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Navigation için eklendi
+import KeycloakService from '../KeycloakService';
+import { fetchAllCategories } from '../APIs/CategoriApi';
+import { fetchAllProducts } from '../APIs/ProductApi';
 import {
   ShoppingBag,
   ShoppingCart,
@@ -10,40 +14,58 @@ import {
 } from 'lucide-react';
 
 const Home = () => {
-  // Örnek veriler
-  const categories = [
-    { id: 1, name: 'Elektronik', image: '📱', itemCount: 1250, color: 'bg-blue-500' },
-    { id: 2, name: 'Moda', image: '👕', itemCount: 890, color: 'bg-pink-500' },
-    { id: 3, name: 'Ev & Yaşam', image: '🏠', itemCount: 650, color: 'bg-green-500' },
-    { id: 4, name: 'Spor', image: '⚽', itemCount: 420, color: 'bg-orange-500' },
-    { id: 5, name: 'Kitap', image: '📚', itemCount: 780, color: 'bg-purple-500' },
-    { id: 6, name: 'Oyuncak', image: '🧸', itemCount: 340, color: 'bg-yellow-500' }
-  ];
+  const navigate = useNavigate(); // Navigation hook'u eklendi
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState([]);
 
-  const featuredProducts = [
-    {
-      id: 1,
-      name: 'iPhone 15 Pro Max',
-      price: 52999,
-      originalPrice: 54999,
-      image: '📱',
-      rating: 4.8,
-      reviews: 124,
-      badge: 'Yeni',
-      badgeColor: 'bg-green-500'
-    },
-    {
-      id: 2,
-      name: 'MacBook Air M3',
-      price: 42999,
-      originalPrice: 45999,
-      image: '💻',
-      rating: 4.9,
-      reviews: 89,
-      badge: 'İndirim',
-      badgeColor: 'bg-red-500'
+  useEffect(() => {
+    loadCategories();
+    loadProducts();
+  }, []);
+
+  const loadCategories = async () => {
+    setLoading(true);
+    try {
+      const result = await fetchAllCategories();
+      setCategories(result.error ? [] : result.data);
+    } catch (error) {
+      alert('Kategoriler yüklenemedi: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      const result = await fetchAllProducts();
+      if (result.error) {
+        alert('Ürünler yüklenemedi: ' + result.message);
+        return;
+      }
+      setProducts(result.data);
+    } catch (error) {
+      alert('Ürünler yüklenemedi: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Kategoriye tıklandığında çalışacak fonksiyon
+  const handleCategoryClick = (categoryId) => {
+    navigate(`/category/${categoryId}`);
+  };
+
+  // Ürüne tıklandığında çalışacak fonksiyon (opsiyonel)
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
+  // Tüm ürünleri görüntüleme fonksiyonu
+  const handleViewAllProducts = () => {
+    navigate('/products');
+  };
 
   const features = [
     {
@@ -80,6 +102,13 @@ const Home = () => {
               <p className="text-xl mb-8 text-blue-100">
                 Teknolojiden modaya, ev dekorasyonundan spora kadar aradığınız her şey burada!
               </p>
+              <button 
+                onClick={handleViewAllProducts}
+                className="bg-yellow-400 text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition-colors inline-flex items-center"
+              >
+                Alışverişe Başla
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
             </div>
             <div className="text-8xl text-center lg:text-right opacity-20 lg:opacity-100">
               🛍️
@@ -114,20 +143,38 @@ const Home = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Kategoriler</h2>
             <p className="text-gray-600 text-lg">Aradığınız ürünü kolayca bulun</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
-              >
-                <div className={`w-16 h-16 ${category.color} rounded-full flex items-center justify-center mx-auto mb-4 text-2xl`}>
-                  {category.image}
+          
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.id)}
+                  className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105 group"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      handleCategoryClick(category.id);
+                    }
+                  }}
+                >
+                  <div className={`w-16 h-16 ${category.color} rounded-full flex items-center justify-center mx-auto mb-4 text-2xl group-hover:scale-110 transition-transform`}>
+                    {category.image}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{category.name}</h3>
+                  <p className="text-gray-500 text-sm">{category.itemCount} ürün</p>
+                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowRight className="w-4 h-4 text-blue-600 mx-auto" />
+                  </div>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
-                <p className="text-gray-500 text-sm">{category.itemCount} ürün</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -139,39 +186,59 @@ const Home = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Öne Çıkan Ürünler</h2>
               <p className="text-gray-600">En popüler ve en çok satılan ürünler</p>
             </div>
-            <button className="flex items-center text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+            <button 
+              onClick={handleViewAllProducts}
+              className="flex items-center text-blue-600 font-semibold hover:text-blue-700 transition-colors"
+            >
               Tümünü Gör <ArrowRight className="w-5 h-5 ml-2" />
             </button>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <div key={product.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 group">
-                <div className="relative p-8 bg-gray-50">
-                  <div className="text-6xl text-center mb-4">{product.image}</div>
-                  <span className={`absolute top-4 left-4 ${product.badgeColor} text-white px-2 py-1 rounded-full text-xs font-semibold`}>
-                    {product.badge}
-                  </span>
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                onClick={() => handleProductClick(product.id)}
+              >
+                {/* Resim yerine emoji */}
+                <div className="relative p-8 bg-gray-50 flex justify-center items-center text-6xl">
+                  {"🏷️"}
+                  {product.mevcutStok === 0 && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                      <span className="text-white font-semibold">Tükendi</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Ürün Bilgileri */}
                 <div className="p-6">
-                  <h3 className="font-semibold text-gray-900 mb-2">{product.name}</h3>
-                  <div className="flex items-center mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-600 ml-2">({product.reviews})</span>
-                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{product.ad}</h3>
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.aciklama}</p>
+
                   <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <span className="text-2xl font-bold text-gray-900">{product.price.toLocaleString('tr-TR')}₺</span>
-                      <span className="text-gray-500 line-through ml-2">{product.originalPrice.toLocaleString('tr-TR')}₺</span>
-                    </div>
+                    <span className="text-2xl font-bold text-gray-900">
+                      {product.fiyat.toLocaleString("tr-TR")}₺
+                    </span>
+                    <span
+                      className={`text-sm font-medium ${product.mevcutStok > 0 ? "text-green-600" : "text-red-600"
+                        }`}
+                    >
+                      {product.mevcutStok > 0
+                        ? `${product.mevcutStok} adet stokta`
+                        : "Stokta yok"}
+                    </span>
                   </div>
-                  <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center">
+
+                  <button 
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={product.mevcutStok === 0}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Ürün kartına tıklanmasını engeller
+                      // Sepete ekleme fonksiyonu burada çalışacak
+                      console.log('Sepete eklendi:', product.id);
+                    }}
+                  >
                     <ShoppingCart className="w-5 h-5 mr-2" />
                     Sepete Ekle
                   </button>

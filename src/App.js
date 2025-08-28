@@ -5,6 +5,7 @@ import AdminLayout from './layouts/AdminLayout.js';
 import Profile from "./component/Profile.js";
 import Home from "./component/Home.js";
 import Cart from "./component/Cart.js";
+import CategoryProducts from './component/CategoryProducts';
 import Favorites from "./component/Home.js"; // Muhtemelen ayrı bir Favorites bileşeni olmalı
 import Search from "./component/Home.js";     // Muhtemelen ayrı bir Search bileşeni olmalı
 import KeycloakService from './KeycloakService.js';
@@ -170,6 +171,7 @@ function AppRouter(props) {
         <Route element={<MainLayout {...props} />}>
           <Route path="/" element={<Home />} />
           <Route path="/cart" element={<Cart />} />
+            <Route path="/category/:categoryId" element={<CategoryProducts />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/search" element={<Search searchQuery={props.searchQuery} />} />
           <Route path="/profile" element={

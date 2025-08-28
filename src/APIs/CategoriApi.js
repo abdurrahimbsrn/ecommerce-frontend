@@ -171,17 +171,10 @@ export const fetchAddCategory = async (yeniKategori) => {
 };
 
 
-export const fetchAllCategories = async (tokenHeader) => {
+export const fetchAllCategories = async () => {
     try {
-        if (!tokenHeader) {
-            return { error: true, status: 401, message: "Yetkilendirme başlığı bulunamadı." };
-        }
-
-        const headers = {
-            'Authorization': tokenHeader
-        };
-
-        const response = await fetch(`${BASE_URL}/kategori/all`, { headers });
+        
+        const response = await fetch(`${BASE_URL}/kategori/all`);
 
         if (!response.ok) {
             const errorStatus = response.status;
