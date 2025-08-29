@@ -1,6 +1,6 @@
 // src/component/Profile.js
 import React, { useState, useEffect } from 'react';
-import { fetchKullanici, updateKullanici } from '../APIs/CategoriApi'; // updateKullanici'yi import ettik
+//import { fetchKullanici, updateKullanici } from '../APIs/CategoriApi'; // updateKullanici'yi import ettik
 
 // Alt bileşenleri import et
 import ProfileSidebar from './ProfileTabs/ProfileSidebar';
@@ -9,13 +9,15 @@ import ProfileOrdersTab from './ProfileTabs/ProfileOrdersTab';
 import ProfileAddressesTab from './ProfileTabs/ProfileAddressesTab';
 import ProfileFavoritesTab from './ProfileTabs/ProfileOrdersTab'; // Bu bileşen hala favorites verisine ihtiyaç duyabilir
 import ProfileSettingsTab from './ProfileTabs/ProfileSettingsTab';
+import { fetchKullanici, updateKullanici } from '../APIs/UserApi';
+import KeycloakService from '../KeycloakService';
 
 const Profile = ({ 
   // App.js'ten gelen props'lar
   login, 
   logout,
-  getHeadersToken,
-  keycloakUserInfo, 
+  //getAuthorizationHeader,
+  //getUserInfo, 
   apiClient 
 }) => {
 
@@ -38,7 +40,7 @@ const Profile = ({
     const getKullaniciData = async () => {
       setApiLoading(true); // API yüklemesini başlat
       try {
-        const tokenHeader = getHeadersToken();
+        const tokenHeader = KeycloakService.getAuthorizationHeader();
         
         if (!tokenHeader) {
           console.log('Token bulunamadı, giriş yap');
@@ -81,20 +83,20 @@ const Profile = ({
       }
     };
 
-    // keycloakUserInfo mevcutsa (kullanıcı giriş yaptıysa) API çağrısını yap
-    if (keycloakUserInfo) {
+    // getUserInfo mevcutsa (kullanıcı giriş yaptıysa) API çağrısını yap
+    if (KeycloakService.getUserInfo()) {
       getKullaniciData();
     } else {
       setLoading(false); // Giriş yapmadıysa yüklemeyi bitir
     }
-  }, [keycloakUserInfo, getHeadersToken, login]); // keycloakUserInfo değiştiğinde çalışır
+  }, [KeycloakService.getUserInfo(), KeycloakService.getAuthorizationHeader(), login]); // getUserInfo değiştiğinde çalışır
 
   // --- Profil Bilgilerini Güncelleme Fonksiyonu ---
   
 const handleSaveProfile = async () => {
     setApiLoading(true);
     try {
-      const tokenHeader = getHeadersToken();
+      const tokenHeader = KeycloakService.getAuthorizationHeader();
       if (!tokenHeader) {
         console.error("Token bulunamadı, profil güncellenemez.");
         setApiLoading(false);
@@ -103,7 +105,7 @@ const handleSaveProfile = async () => {
       }
 
       // Keycloak'tan gelen kullanıcı ID'sini al (bu backend'deki keycloakId'ye denk gelir)
-      const userId = keycloakUserInfo?.sub; 
+      const userId = KeycloakService.getUserInfo()?.sub; 
       if (!userId) {
         console.error("Keycloak kullanıcı ID'si bulunamadı, profil güncellenemez.");
         setApiLoading(false);
@@ -173,7 +175,7 @@ const handleSaveProfile = async () => {
             handleSaveProfile={handleSaveProfile}
             apiLoading={apiLoading}
             error={error}
-            // keycloakUserInfo'yi artık bu bileşene pass etmiyoruz
+            // getUserInfo'yi artık bu bileşene pass etmiyoruz
             // kullaniciData'yı da artık input'lar için değil, başka bir yerde istersen kullan
           />
         );
@@ -206,7 +208,7 @@ const handleSaveProfile = async () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar bileşeni */}
           <ProfileSidebar
-            keycloakUserInfo={keycloakUserInfo} // Sidebar hala Keycloak bilgisini gösterebilir
+            getUserInfo={KeycloakService.getUserInfo()} // Sidebar hala Keycloak bilgisini gösterebilir
             userInfo={userInfo} // userInfo'yu sidebar'a da pass edebiliriz
             activeTab={activeTab}
             setActiveTab={setActiveTab}
