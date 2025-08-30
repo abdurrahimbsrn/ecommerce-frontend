@@ -136,6 +136,52 @@ export const fetchAddress = async (tokenHeader, address) => {
         };
 
         // URL'ye '{id}' parametresini ekliyoruz
+        const response = await fetch(`${BASE_URL}/adres`, {
+            method: 'GET',
+            headers: headers,
+            body: JSON.stringify(address)
+        });
+
+        if (!response.ok) {
+            const errorStatus = response.status;
+            let errorMessage = `Kategori ekleme hatası: ${errorStatus}`;
+
+            if (errorStatus === 401) {
+                errorMessage = "Giriş yapmanız gerekiyor. Token süresi dolmuş veya geçersiz.";
+            } else if (errorStatus === 403) {
+                errorMessage = "Bu işlemi yapmaya yetkiniz yok.";
+            } else if (errorStatus === 404) {
+                errorMessage = "Kullanıcı bilgileri bulunamadı.";
+            } else if (errorStatus === 400) {
+                const errorData = await response.json();
+                errorMessage = errorData.message || "Geçersiz veri.";
+            }
+            return { error: true, status: errorStatus, message: errorMessage };
+        }
+
+        const data = await response.json();
+        return { error: false, data: data };
+
+    } catch (error) {
+        console.error("updateKullanici API çağrısı sırasında bir hata oluştu:", error.message);
+        return { error: true, status: 500, message: "Profil güncellenirken bir bağlantı hatası oluştu." };
+    }
+};
+
+
+// updateKullanici fonksiyonu şimdi bir 'id' parametresi alıyor
+export const fetchSaveAddress = async (tokenHeader, address) => {
+    try {
+        if (!tokenHeader) {
+            return { error: true, status: 401, message: "Yetkilendirme başlığı bulunamadı." };
+        }
+
+        const headers = {
+            'Authorization': tokenHeader,
+            'Content-Type': 'application/json'
+        };
+
+        // URL'ye '{id}' parametresini ekliyoruz
         const response = await fetch(`${BASE_URL}/adres/add`, {
             method: 'POST',
             headers: headers,
@@ -144,7 +190,7 @@ export const fetchAddress = async (tokenHeader, address) => {
 
         if (!response.ok) {
             const errorStatus = response.status;
-            let errorMessage = `Kategori ekleme hatası: ${errorStatus}`;
+            let errorMessage = `Profil güncelleme hatası: ${errorStatus}`;
 
             if (errorStatus === 401) {
                 errorMessage = "Giriş yapmanız gerekiyor. Token süresi dolmuş veya geçersiz.";

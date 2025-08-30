@@ -1,12 +1,23 @@
 // src/component/ProfileAddressesTab.js
 import React, { useState, useEffect } from 'react';
 import { Edit3, MapPin, Save, X } from 'lucide-react';
-import { fetchAddress } from '../../APIs/UserApi';
+import { fetchAddress, fetchSaveAddress } from '../../APIs/UserApi';
+import KeycloakService from '../../KeycloakService';
+
 
 const ProfileAddressesTab = ({}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [address, setAddresses] = useState([]);
+
+  useEffect(() => {
+  fetchAddress(KeycloakService.getAuthorizationHeader()).then(response => {
+      if (!response.error) {
+        setAddresses(response.data);
+      }
+    });
+  }, []
+  );
 
   // Düzenleme modunu başlat
   const handleStartEdit = () => {
@@ -44,6 +55,14 @@ const ProfileAddressesTab = ({}) => {
     }
 
     setAddresses(editingAddress);
+    const token=KeycloakService.getAuthorizationHeader();
+    console.log(token);
+    const response=fetchSaveAddress(token, editingAddress);
+    if(!response.error){
+      alert('Adres başarıyla kaydedildi!');
+    } else {
+      alert('Adres kaydedilirken bir hata oluştu: ' + response.message);
+    }
     setIsEditing(false);
     setEditingAddress(null);
   };
