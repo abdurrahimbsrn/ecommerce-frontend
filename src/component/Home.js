@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Navigation için eklendi
 import KeycloakService from '../KeycloakService';
 import { fetchAllCategories } from '../APIs/CategoriApi';
@@ -55,6 +55,16 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Rastgele renk döndüren yardımcı fonksiyon
+  const getRandomColor = () => {
+    const colors = [
+      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-red-500',
+      'bg-yellow-500', 'bg-indigo-500', 'bg-pink-500', 'bg-teal-500'
+    ];
+    const randomIndex = Math.floor(Math.random() * colors.length);
+    return colors[randomIndex];
   };
 
   // Kategoriye tıklandığında çalışacak fonksiyon
@@ -159,7 +169,7 @@ const Home = () => {
                 <div
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
-                  className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105 group"
+                  className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 group"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
@@ -168,11 +178,11 @@ const Home = () => {
                     }
                   }}
                 >
-                  <div className={`w-16 h-16 ${category.color} rounded-full flex items-center justify-center mx-auto mb-4 text-2xl group-hover:scale-110 transition-transform`}>
-                    {category.image}
+                  <div className={`w-16 h-16 ${getRandomColor()} text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl group-hover:scale-110 transition-transform`}>
+                    🛍️
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{category.name}</h3>
-                  <p className="text-gray-500 text-sm">{category.itemCount} ürün</p>
+                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{category.kategoriAd}</h3>
+                  <p className="text-gray-500 text-sm">{category.aciklama}</p>
                   <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <ArrowRight className="w-4 h-4 text-blue-600 mx-auto" />
                   </div>
@@ -191,12 +201,7 @@ const Home = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Öne Çıkan Ürünler</h2>
               <p className="text-gray-600">En popüler ve en çok satılan ürünler</p>
             </div>
-            <button
-              onClick={handleViewAllProducts}
-              className="flex items-center text-blue-600 font-semibold hover:text-blue-700 transition-colors"
-            >
-              Tümünü Gör <ArrowRight className="w-5 h-5 ml-2" />
-            </button>
+
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

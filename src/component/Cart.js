@@ -43,7 +43,7 @@ const Cart = () => {
   const handleCheckout = () => {
     if (cartItems.length === 0) {
       alert('Sepetiniz boş!');
-
+      
       return;
     }
     else{

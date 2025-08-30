@@ -5,17 +5,18 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../CartHook'; // Sepet hook'unu import et
 import { MapPin, CreditCard, CheckCircle, ArrowLeft, ShoppingBag } from 'lucide-react';
 import KeycloakService from '../KeycloakService'; // Kullanıcı bilgileri için
-import { fetchKullanici } from '../APIs/UserApi'; // Kullanıcı adreslerini çekmek için
+import { fetchAddress } from '../APIs/UserApi'; // Kullanıcı adreslerini çekmek için
+import { fetchAddOrder, fetchAddPayment } from '../APIs/OrderApi';
 import { Truck, Shield } from 'lucide-react';
 
-const CheckoutPage = ({ getHeadersToken }) => {
+const CheckoutPage = ({ }) => {
   const navigate = useNavigate();
   const { cartItems, cartTotal, clearCart } = useCart();
 
   const [activeStep, setActiveStep] = useState(1); // 1: Adres, 2: Ödeme, 3: Onay
   const [shippingAddress, setShippingAddress] = useState(null); // Seçilen gönderim adresi
-  const [paymentMethod, setPaymentMethod] = useState('credit_card'); // Seçilen ödeme yöntemi
-  const [userAddresses, setUserAddresses] = useState([]); // Kullanıcının kayıtlı adresleri
+  const [paymentMethod, setPaymentMethod] = useState('KREDI_KARTI'); // Seçilen ödeme yöntemi
+  const [address, setUserAddresses] = useState([]); // Kullanıcının kayıtlı adresleri
   const [newAddressForm, setNewAddressForm] = useState({ // Yeni adres ekleme formu
     title: '', name: '', address: '', district: '', city: '', zipCode: '', phone: ''
   });
@@ -34,23 +35,21 @@ const CheckoutPage = ({ getHeadersToken }) => {
       setLoadingAddresses(true);
       setAddressesError(null);
       try {
-        const tokenHeader = getHeadersToken();
+        const tokenHeader = KeycloakService.getAuthorizationHeader();
         if (!tokenHeader) {
           // Token yoksa login sayfasına yönlendir veya hata göster
           navigate('/profile'); // Profil sayfasına yönlendir, oradan login olabilir
           return;
         }
         // Kullanıcının profil bilgilerini çekerek adreslerini al
-        const result = await fetchKullanici(tokenHeader); 
+        const result = await fetchAddress(tokenHeader);
         if (result.error) {
           setAddressesError(result.message || "Adresler yüklenirken bir hata oluştu.");
         } else {
-          // Varsayım: kullaniciData içinde bir 'addresses' dizisi var
-          // Eğer yoksa, bu kısmı backend'den adresleri çekecek ayrı bir API çağrısıyla değiştir.
-          setUserAddresses(result.data.addresses || []); 
-          // Eğer tek adres varsa veya varsayılan adres varsa onu seç
-          if (result.data.addresses && result.data.addresses.length > 0) {
-            setShippingAddress(result.data.addresses.find(addr => addr.isDefault) || result.data.addresses[0]);
+          setUserAddresses(result.data);
+          if (result.data != null) {
+            setActiveStep(2); // Adres varsa direkt ödeme adımına geç
+            setShippingAddress(result.data);
           }
         }
       } catch (err) {
@@ -65,27 +64,7 @@ const CheckoutPage = ({ getHeadersToken }) => {
     } else {
       navigate('/profile'); // Giriş yapmadıysa profile sayfasına yönlendir
     }
-  }, [getHeadersToken, navigate]);
-
-  // --- Yeni Adres Formu Değişiklikleri ---
-  const handleNewAddressChange = (e) => {
-    const { name, value } = e.target;
-    setNewAddressForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  // --- Yeni Adres Ekleme ---
-  const handleAddNewAddress = async (e) => {
-    e.preventDefault();
-    // TODO: Yeni adresi backend'e kaydet
-    console.log("Yeni adres kaydediliyor:", newAddressForm);
-    const newId = userAddresses.length > 0 ? Math.max(...userAddresses.map(addr => addr.id)) + 1 : 1;
-    const addedAddress = { ...newAddressForm, id: newId, isDefault: false };
-    setUserAddresses(prev => [...prev, addedAddress]);
-    setShippingAddress(addedAddress); // Yeni eklenen adresi seç
-    setNewAddressForm({ title: '', name: '', address: '', district: '', city: '', zipCode: '', phone: '' });
-    setShowNewAddressForm(false);
-    // TODO: Başarılı olursa backend'den gelen ID ile güncelle
-  };
+  }, [navigate]);
 
   // --- Siparişi Tamamlama ---
   const handlePlaceOrder = async () => {
@@ -104,35 +83,42 @@ const CheckoutPage = ({ getHeadersToken }) => {
 
     setProcessingOrder(true);
     try {
-      const tokenHeader = getHeadersToken();
+      const tokenHeader = KeycloakService.getAuthorizationHeader();
       if (!tokenHeader) {
+
         alert("Giriş yapmanız gerekiyor.");
         navigate('/profile');
         return;
       }
-
       const orderData = {
-        userId: KeycloakService.getUserInfo()?.sub, // Keycloak kullanıcı ID'si
-        shippingAddressId: shippingAddress.id,
-        paymentMethod: paymentMethod,
-        items: cartItems.map(item => ({
-          productId: item.id,
-          quantity: item.miktar,
-          priceAtOrder: item.fiyat, // Sipariş anındaki fiyat
-        })),
-        subtotal: subtotal,
-        shippingCost: shippingCost,
-        totalAmount: totalAmount,
+        siparisKalemleri: cartItems.map(item => ({
+          urunId: item.id,
+          miktar: item.miktar
+        }))
       };
 
-      // TODO: Backend'e sipariş oluşturma isteği gönder
-      // const response = await apiClient.post('/siparis', orderData, { headers: { Authorization: tokenHeader } });
+
       console.log("Sipariş verisi backend'e gönderiliyor:", orderData);
-      
+      const orderResult = await fetchAddOrder(orderData, tokenHeader);
+      if (orderResult.error) {
+        alert('Sipariş oluşturulamadı: ' + orderResult.message);
+        return;
+      }
+      console.log("Sipariş oluşturuldu:", orderResult.data.siparisId);
+      const paymentData = {
+        siparisId: orderResult.data.siparisId,
+        odemeYontemi: paymentMethod
+      };
+      console.log("Ödeme verisi backend'e gönderiliyor:", paymentData);
+      const paymentResult = await fetchAddPayment(paymentData, tokenHeader);
+      if (paymentResult.error) {
+        alert('Ödeme işlemi başarısız: ' + paymentResult.message);
+        return;
+      }
       // Başarılı olursa sepeti temizle ve sipariş onay sayfasına yönlendir
       clearCart();
       alert('Siparişiniz başarıyla alındı!');
-      navigate('/order-confirmation'); // Sipariş onay sayfasına yönlendir
+      navigate('/'); // Sipariş onay sayfasına yönlendir
 
     } catch (error) {
       console.error('Sipariş oluşturma hatası:', error);
@@ -181,8 +167,8 @@ const CheckoutPage = ({ getHeadersToken }) => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center text-red-600">
           <p>Hata: {addressesError}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Tekrar Dene
@@ -221,59 +207,39 @@ const CheckoutPage = ({ getHeadersToken }) => {
                 <span className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold mr-3 ${activeStep === 1 ? 'bg-blue-600' : 'bg-gray-400'}`}>1</span>
                 <h2 className="text-xl font-semibold text-gray-900">Gönderim Adresi</h2>
               </div>
-              
-              {/* Kayıtlı Adresler */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {userAddresses.map(addr => (
-                  <div 
-                    key={addr.id} 
-                    onClick={() => setShippingAddress(addr)}
-                    className={`border-2 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors ${shippingAddress?.id === addr.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200'}`}
-                  >
-                    <h3 className="font-semibold">{addr.title}</h3>
-                    <p className="text-sm text-gray-700">{addr.name}</p>
-                    <p className="text-sm text-gray-600">{addr.address}, {addr.district}/{addr.city}</p>
-                    <p className="text-sm text-gray-600">{addr.phone}</p>
-                  </div>
-                ))}
-              </div>
 
-              {/* Yeni Adres Ekleme */}
-              {!showNewAddressForm ? (
-                <button 
-                  onClick={() => setShowNewAddressForm(true)}
-                  className="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <MapPin className="w-5 h-5" />
-                  <span>Yeni Adres Ekle</span>
-                </button>
-              ) : (
-                <form onSubmit={handleAddNewAddress} className="mt-4 space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <h3 className="font-semibold text-gray-800">Yeni Adres Bilgileri</h3>
-                  <input type="text" name="title" value={newAddressForm.title} onChange={handleNewAddressChange} placeholder="Adres Başlığı" className="w-full p-2 border rounded" required />
-                  <input type="text" name="name" value={newAddressForm.name} onChange={handleNewAddressChange} placeholder="Ad Soyad" className="w-full p-2 border rounded" required />
-                  <input type="text" name="address" value={newAddressForm.address} onChange={handleNewAddressChange} placeholder="Açık Adres" className="w-full p-2 border rounded" required />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" name="district" value={newAddressForm.district} onChange={handleNewAddressChange} placeholder="İlçe" className="w-full p-2 border rounded" required />
-                    <input type="text" name="city" value={newAddressForm.city} onChange={handleNewAddressChange} placeholder="Şehir" className="w-full p-2 border rounded" required />
-                  </div>
-                  <input type="text" name="zipCode" value={newAddressForm.zipCode} onChange={handleNewAddressChange} placeholder="Posta Kodu" className="w-full p-2 border rounded" />
-                  <input type="tel" name="phone" value={newAddressForm.phone} onChange={handleNewAddressChange} placeholder="Telefon Numarası" className="w-full p-2 border rounded" required />
-                  <div className="flex justify-end space-x-2">
-                    <button type="button" onClick={() => setShowNewAddressForm(false)} className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md">İptal</button>
-                    <button type="submit" className="px-4 py-2 text-white bg-blue-600 rounded-md">Adresi Kaydet</button>
-                  </div>
-                </form>
-              )}
+              <div>
+                {address ? (
+                  <div className="max-w-md">
+                    <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
+                      <div className="flex items-center mb-4">
+                        <MapPin className="w-5 h-5 text-blue-600 mr-2" />
+                        <h3 className="font-semibold text-gray-900 text-lg">{address.adresAdi}</h3>
+                      </div>
 
-              <div className="mt-6 flex justify-end">
-                <button 
-                  onClick={() => setActiveStep(2)} 
-                  disabled={!shippingAddress}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  Ödeme Yöntemine Geç
-                </button>
+                      <div className="text-gray-700 space-y-2">
+                        <p className="flex items-start">
+                          <span className="font-medium text-gray-900 w-16 inline-block">Ülke:</span>
+                          <span>{address.ulke}</span>
+                        </p>
+                        <p className="flex items-start">
+                          <span className="font-medium text-gray-900 w-16 inline-block">Şehir:</span>
+                          <span>{address.sehir}</span>
+                        </p>
+                        <p className="flex items-start">
+                          <span className="font-medium text-gray-900 w-16 inline-block">İlçe:</span>
+                          <span>{address.ilce}</span>
+                        </p>
+                        <p className="flex items-start">
+                          <span className="font-medium text-gray-900 w-16 inline-block">Detay:</span>
+                          <span>{address.detay}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-600">Kayıtlı bir adres bulunamadı. Lütfen profil sayfanızdan bir adres ekleyin.</p>
+                )}
               </div>
             </div>
 
@@ -283,75 +249,50 @@ const CheckoutPage = ({ getHeadersToken }) => {
                 <span className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold mr-3 ${activeStep === 2 ? 'bg-blue-600' : 'bg-gray-400'}`}>2</span>
                 <h2 className="text-xl font-semibold text-gray-900">Ödeme Yöntemi</h2>
               </div>
-              
+
               <div className="space-y-4">
                 <label className="flex items-center border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="credit_card" 
-                    checked={paymentMethod === 'credit_card'} 
-                    onChange={() => setPaymentMethod('credit_card')} 
-                    className="mr-3" 
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="KREDI_KART"
+                    checked={paymentMethod === 'KREDI_KARTI'}
+                    onChange={() => setPaymentMethod('KREDI_KARTI')}
+                    className="mr-3"
                   />
                   <CreditCard className="w-5 h-5 mr-2 text-gray-600" />
                   <span>Kredi Kartı</span>
                 </label>
                 <label className="flex items-center border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="bank_transfer" 
-                    checked={paymentMethod === 'bank_transfer'} 
-                    onChange={() => setPaymentMethod('bank_transfer')} 
-                    className="mr-3" 
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="HAVALE"
+                    checked={paymentMethod === 'HAVALE'}
+                    onChange={() => setPaymentMethod('HAVALE')}
+                    className="mr-3"
                   />
                   <i className="fas fa-university w-5 h-5 mr-2 text-gray-600"></i> {/* Font Awesome ikonu */}
                   <span>Banka Havalesi / EFT</span>
                 </label>
                 {/* Diğer ödeme yöntemleri */}
               </div>
-
-              <div className="mt-6 flex justify-between">
-                <button 
-                  onClick={() => setActiveStep(1)} 
-                  className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  Geri Dön
-                </button>
-                <button 
-                  onClick={() => setActiveStep(3)} 
-                  disabled={!paymentMethod}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  Siparişi Onayla
-                </button>
-              </div>
             </div>
 
             {/* Adım 3: Sipariş Özeti ve Onay */}
-            <div className={`bg-white rounded-2xl shadow-lg p-6 ${activeStep < 3 ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className={`bg-white rounded-2xl shadow-lg p-6 ${activeStep < 1 ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="flex items-center mb-4">
-                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold mr-3 ${activeStep === 3 ? 'bg-blue-600' : 'bg-gray-400'}`}>3</span>
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold mr-3 ${activeStep === 2 ? 'bg-blue-600' : 'bg-gray-400'}`}>3</span>
                 <h2 className="text-xl font-semibold text-gray-900">Sipariş Özeti ve Onay</h2>
               </div>
 
-              {/* Seçilen Adres */}
-              {shippingAddress && (
-                <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <h3 className="font-semibold text-gray-800 mb-2">Gönderim Adresi:</h3>
-                  <p className="text-sm text-gray-700">{shippingAddress.name}</p>
-                  <p className="text-sm text-gray-600">{shippingAddress.address}, {shippingAddress.district}/{shippingAddress.city}</p>
-                  <p className="text-sm text-gray-600">{shippingAddress.phone}</p>
-                </div>
-              )}
 
               {/* Seçilen Ödeme Yöntemi */}
               {paymentMethod && (
                 <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                   <h3 className="font-semibold text-gray-800 mb-2">Ödeme Yöntemi:</h3>
                   <p className="text-sm text-gray-700">
-                    {paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Banka Havalesi / EFT'}
+                    {paymentMethod === 'KREDI_KARTI' ? 'Kredi Kartı' : 'Banka Havalesi / EFT'}
                   </p>
                 </div>
               )}
@@ -383,19 +324,19 @@ const CheckoutPage = ({ getHeadersToken }) => {
               </div>
 
               <div className="flex justify-between">
-                <button 
-                  onClick={() => setActiveStep(2)} 
+                <button
+                  onClick={() => setActiveStep(2)}
                   className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
                 >
                   Geri Dön
                 </button>
-                <button 
-                  onClick={handlePlaceOrder} 
+                <button
+                  onClick={handlePlaceOrder}
                   disabled={processingOrder}
                   className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   <CheckCircle className="w-5 h-5" />
-                  <span>{processingOrder ? 'Sipariş İşleniyor...' : 'Siparişi Tamamla'}</span>
+                  <span>{processingOrder ? 'Ödeme Alınıyor...' : 'Ödemeyi Tamamla'}</span>
                 </button>
               </div>
             </div>
