@@ -83,7 +83,7 @@ const ProfileInfoTab = ({
                         name="email" // 'email' attribute'u userInfo.email'i güncelleyecek
                         value={userInfo.email}
                         onChange={handleChange}
-                        disabled={!editMode}
+                        disabled={editMode}
                         className={`w-full px-4 py-3 border rounded-lg ${editMode ? 'border-gray-300 focus:ring-2 focus:ring-blue-500' : 'border-gray-200 bg-gray-50'}`}
                     />
                 </div>

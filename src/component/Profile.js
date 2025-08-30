@@ -1,135 +1,131 @@
 // src/component/Profile.js
 import React, { useState, useEffect } from 'react';
-//import { fetchKullanici, updateKullanici } from '../APIs/CategoriApi'; // updateKullanici'yi import ettik
 
 // Alt bileşenleri import et
 import ProfileSidebar from './ProfileTabs/ProfileSidebar';
 import ProfileInfoTab from './ProfileTabs/ProfileInfoTab';
 import ProfileOrdersTab from './ProfileTabs/ProfileOrdersTab';
 import ProfileAddressesTab from './ProfileTabs/ProfileAddressesTab';
-import ProfileFavoritesTab from './ProfileTabs/ProfileOrdersTab'; // Bu bileşen hala favorites verisine ihtiyaç duyabilir
+//import ProfileFavoritesTab from './ProfileTabs/ProfileFavoritesTab'; // Düzenlendi: Kendi dosyasından import ediliyor
 import ProfileSettingsTab from './ProfileTabs/ProfileSettingsTab';
 import { fetchKullanici, updateKullanici } from '../APIs/UserApi';
 import KeycloakService from '../KeycloakService';
 
-const Profile = ({ 
-  // App.js'ten gelen props'lar
-  login, 
-  logout,
-  //getAuthorizationHeader,
-  //getUserInfo, 
-  apiClient 
+const Profile = ({
+  login,
+  logout
 }) => {
-
-  const [kullaniciData, setKullaniciData] = useState(null); // Backend'den gelen orijinal data
-  const [userInfo, setUserInfo] = useState({ // Düzenlenebilir kullanıcı bilgileri
+  const [userInfo, setUserInfo] = useState({
     name: '',
     surname: '',
     email: '',
     phone: '',
   });
-  const [addresses, setAddresses] = useState([]); // Adres verileri
-  const [loading, setLoading] = useState(true); // Genel yüklenme durumu
-  const [error, setError] = useState(null); // API hata mesajı
-  const [apiLoading, setApiLoading] = useState(false); // API çağrısı devam ediyor mu?
-  const [editMode, setEditMode] = useState(false); // Düzenleme modu açık mı?
-  const [activeTab, setActiveTab] = useState('profile'); // Aktif sekme
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
 
-  // --- API'den Kullanıcı Verilerini Çekme (İlk Yükleme) ---
+  // Kullanıcı verilerini sadece bileşen ilk yüklendiğinde çek
   useEffect(() => {
+    let isMounted = true; // Bileşenin mount durumunu takip etmek için bayrak
+
     const getKullaniciData = async () => {
-      setApiLoading(true); // API yüklemesini başlat
+      setApiLoading(true);
       try {
         const tokenHeader = KeycloakService.getAuthorizationHeader();
-        
+
+        // Eğer token yoksa, kullanıcıyı giriş sayfasına yönlendir ve fonksiyondan çık
         if (!tokenHeader) {
-          console.log('Token bulunamadı, giriş yap');
-          login(); // Keycloak login sayfasına yönlendir
-          return;
+          console.log('Token bulunamadı. Kullanıcı giriş sayfasına yönlendiriliyor.');
+          if (isMounted) {
+            login(); // login() bir yönlendirme (redirect) yaptığı varsayılır
+            setLoading(false); // Yükleme durumunu kapat
+          }
+          return; // Token yoksa API çağrısı yapma
         }
 
-        const result = await fetchKullanici(tokenHeader); // API çağrısı
+        const result = await fetchKullanici(tokenHeader);
+
+        if (!isMounted) return;
 
         if (result.error) {
           console.error("API Hatası:", result.status, result.message);
-          if (result.status === 401) {
-            console.log("Kullanıcı yetkilendirme hatası - giriş sayfasına yönlendir");
-            login();
-          } else if (result.status === 403) {
-            setError("Bu sayfaya erişim yetkiniz bulunmuyor.");
+          if (result.status === 401 || result.status === 403) {
+            setError("Yetkilendirme hatası. Lütfen tekrar giriş yapın.");
+            logout(); // Yetkilendirme hatasında çıkış yap
           } else {
-            setError(result.message || "Bir hata oluştu");
+            setError(result.message || "Profil verileri yüklenirken bir hata oluştu.");
           }
         } else {
-          console.log("API'den gelen kullanıcı verisi:", result.data);
-          setKullaniciData(result.data); // Orijinal backend verisini kaydet
-          // Düzenlenebilir userInfo state'ini backend verileriyle başlat
+          // API'den gelen alan adlarını `userInfo` state'indeki alan adlarıyla eşleştir
           setUserInfo({
-            name: result.data.ad || '',
-            surname: result.data.soyad || '',
-            email: result.data.email || '',
-            phone: result.data.telefon || '',
+            name: result.data.ad ?? '',      // `ad` alanını kullan, yoksa boş string
+            surname: result.data.soyad ?? '', // `soyad` alanını kullan, yoksa boş string
+            email: result.data.eposta ?? '',  // Düzeltildi: `eposta` alanını kullan
+            phone: result.data.telefon ?? '', // `telefon` alanını kullan, yoksa boş string
           });
-          // Adresleri de burada başlatabilirsin (eğer kullaniciData içinde geliyorsa)
-          // setAddresses(result.data.addresses || []); 
-          setError(null); // Hata yoksa temizle
+          // Eğer adresler API'den geliyorsa bu satırı aktif edin:
+          // setAddresses(result.data.adresler ?? []); 
+          setError(null);
         }
       } catch (err) {
+        if (!isMounted) return;
         console.error('API çağrısı hatası:', err);
         setError("Sunucuya bağlanırken bir hata oluştu: " + err.message);
       } finally {
-        setApiLoading(false); // API yüklemesini bitir
-        setLoading(false);    // Genel yüklemeyi bitir
+        if (isMounted) {
+          setApiLoading(false);
+          setLoading(false);
+        }
       }
     };
+    const setAddresses = (addresses) => {
 
-    // getUserInfo mevcutsa (kullanıcı giriş yaptıysa) API çağrısını yap
-    if (KeycloakService.getUserInfo()) {
-      getKullaniciData();
-    } else {
-      setLoading(false); // Giriş yapmadıysa yüklemeyi bitir
-    }
-  }, [KeycloakService.getUserInfo(), KeycloakService.getAuthorizationHeader(), login]); // getUserInfo değiştiğinde çalışır
+    };
 
-  // --- Profil Bilgilerini Güncelleme Fonksiyonu ---
-  
-const handleSaveProfile = async () => {
+    // Effect'in sadece bileşen ilk yüklendiğinde bir kez çalışmasını sağla
+    // login ve logout fonksiyonlarının stabil (useCallback ile sarılmış) olduğunu varsayarız
+    // veya login'in bir yönlendirme yaptığını varsayarız.
+    getKullaniciData();
+
+    // Cleanup fonksiyonu: Bileşen unmount olduğunda isMounted bayrağını false yap
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Boş bağımlılık dizisi: Sadece bir kez çalışır
+
+  // Profil bilgilerini güncelleme fonksiyonu
+  const handleSaveProfile = async () => {
     setApiLoading(true);
     try {
       const tokenHeader = KeycloakService.getAuthorizationHeader();
-      if (!tokenHeader) {
-        console.error("Token bulunamadı, profil güncellenemez.");
-        setApiLoading(false);
-        setError("Token bulunamadı, lütfen tekrar giriş yapın.");
-        return;
-      }
+      const userInfoFromKeycloak = KeycloakService.getUserInfo();
+      const userId = userInfoFromKeycloak?.sub;
 
-      // Keycloak'tan gelen kullanıcı ID'sini al (bu backend'deki keycloakId'ye denk gelir)
-      const userId = KeycloakService.getUserInfo()?.sub; 
-      if (!userId) {
-        console.error("Keycloak kullanıcı ID'si bulunamadı, profil güncellenemez.");
+      if (!tokenHeader || !userId) {
+        console.error("Yetkilendirme bilgileri eksik. Profil güncellenemez.");
+        setError("Yetkilendirme hatası. Lütfen tekrar giriş yapın.");
         setApiLoading(false);
-        setError("Kullanıcı ID'si alınamadı, lütfen tekrar giriş yapın.");
+        login(); // Eksik yetkilendirmede login sayfasına yönlendir
         return;
       }
 
       const updatedUserData = {
-         ad: userInfo.name,
-         soyad: userInfo.surname,
-         email: userInfo.email,
-         telefon: userInfo.phone,
+        ad: userInfo.name,
+        soyad: userInfo.surname,
+        telefon: userInfo.phone
       };
-      
-      // updateKullanici fonksiyonunu userId parametresiyle çağır
-      const result = await updateKullanici(userId, updatedUserData, tokenHeader); 
+
+      const result = await updateKullanici(userId, updatedUserData, tokenHeader);
 
       if (result.error) {
         throw new Error(result.message || `Profil güncelleme hatası: ${result.status}`);
       }
 
-      console.log('Profil başarıyla güncellendi:', result.data);
-      setKullaniciData(result.data); 
-      setUserInfo({ 
+      setUserInfo({
         name: result.data.ad || '',
         surname: result.data.soyad || '',
         email: result.data.email || '',
@@ -137,7 +133,7 @@ const handleSaveProfile = async () => {
       });
       setEditMode(false);
       setError(null);
-      
+
     } catch (err) {
       console.error('Profil güncelleme API hatası:', err);
       setError("Profil güncellenirken bir hata oluştu: " + err.message);
@@ -146,11 +142,10 @@ const handleSaveProfile = async () => {
     }
   };
 
-  const handleLogout = () => {
-    logout(); // App.js'ten gelen logout fonksiyonunu çağır
+  const handleLogoutClick = () => { // Logout fonksiyonunu direkt kullanmak yerine bir handler oluşturduk
+    logout();
   };
 
-  // Loading ekranı
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -175,30 +170,16 @@ const handleSaveProfile = async () => {
             handleSaveProfile={handleSaveProfile}
             apiLoading={apiLoading}
             error={error}
-            // getUserInfo'yi artık bu bileşene pass etmiyoruz
-            // kullaniciData'yı da artık input'lar için değil, başka bir yerde istersen kullan
           />
         );
       case 'orders':
-        return <ProfileOrdersTab />; // orders prop'u ProfileOrdersTab'in içinde tanımlandı
+        return <ProfileOrdersTab />;
       case 'addresses':
-        return <ProfileAddressesTab addresses={addresses} setAddresses={setAddresses} />;
-      case 'favorites':
-        return <ProfileFavoritesTab />; 
+        return <ProfileAddressesTab/>;
       case 'settings':
         return <ProfileSettingsTab />;
       default:
-        return (
-          <ProfileInfoTab
-            userInfo={userInfo}
-            setUserInfo={setUserInfo}
-            editMode={editMode}
-            setEditMode={setEditMode}
-            handleSaveProfile={handleSaveProfile}
-            apiLoading={apiLoading}
-            error={error}
-          />
-        );
+        return null;
     }
   };
 
@@ -206,16 +187,13 @@ const handleSaveProfile = async () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar bileşeni */}
           <ProfileSidebar
-            getUserInfo={KeycloakService.getUserInfo()} // Sidebar hala Keycloak bilgisini gösterebilir
-            userInfo={userInfo} // userInfo'yu sidebar'a da pass edebiliriz
+            getUserInfo={KeycloakService.getUserInfo()}
+            userInfo={userInfo}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            handleLogout={handleLogout}
+            handleLogout={handleLogoutClick} // Yeni handler'ı kullan
           />
-
-          {/* Ana İçerik alanı */}
           <div className="lg:col-span-3">
             {renderContent()}
           </div>
