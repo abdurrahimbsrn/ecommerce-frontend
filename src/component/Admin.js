@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import OrdersTab from './AdminTabs/OrdersTab';
 import ProductsTab from './AdminTabs/ProductTabs';
 import DashboardTab from './AdminTabs/DashBoardTab';
+
 import {
     LayoutDashboard,
     Package,
@@ -19,97 +20,8 @@ import CustomersTab from './AdminTabs/CustomersTab';
 import CategoriesTab from './AdminTabs/CategoriesTab';
 
 const AdminPanel = () => {
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [showProductModal, setShowProductModal] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [products, setProducts] = useState([
-        {
-            id: 1,
-            name: 'iPhone 15 Pro Max',
-            category: 'Elektronik',
-            price: 52999,
-            stock: 25,
-            status: 'active',
-            image: '📱',
-            description: 'En yeni iPhone modeli',
-            createdAt: '2024-01-15'
-        },
-        {
-            id: 2,
-            name: 'MacBook Air M3',
-            category: 'Bilgisayar',
-            price: 42999,
-            stock: 0,
-            status: 'inactive',
-            image: '💻',
-            description: 'Apple M3 çipli laptop',
-            createdAt: '2024-01-10'
-        },
-        {
-            id: 3,
-            name: 'AirPods Pro',
-            category: 'Aksesuar',
-            price: 8999,
-            stock: 50,
-            status: 'active',
-            image: '🎧',
-            description: 'Kablosuz kulaklık',
-            createdAt: '2024-01-20'
-        }
-    ]);
-
-    const [users] = useState([
-        {
-            id: 1,
-            name: 'Ahmet Yılmaz',
-            email: 'ahmet@example.com',
-            phone: '+90 555 123 4567',
-            city: 'İstanbul',
-            totalOrders: 15,
-            totalSpent: 45000,
-            status: 'active',
-            joinDate: '2023-06-15'
-        },
-        {
-            id: 2,
-            name: 'Ayşe Kaya',
-            email: 'ayse@example.com',
-            phone: '+90 555 987 6543',
-            city: 'Ankara',
-            totalOrders: 8,
-            totalSpent: 22000,
-            status: 'active',
-            joinDate: '2023-09-20'
-        }
-    ]);
-
-    const [orders] = useState([
-        {
-            id: '#ORD-2025-001',
-            customer: 'Ahmet Yılmaz',
-            date: '2025-01-20',
-            status: 'delivered',
-            total: 52999,
-            items: 2
-        },
-        {
-            id: '#ORD-2025-002',
-            customer: 'Ayşe Kaya',
-            date: '2025-01-19',
-            status: 'shipping',
-            total: 8999,
-            items: 1
-        },
-        {
-            id: '#ORD-2025-003',
-            customer: 'Mehmet Demir',
-            date: '2025-01-18',
-            status: 'pending',
-            total: 15500,
-            items: 3
-        }
-    ]);
-
+    const [activeTab, setActiveTab] = useState('orders');
+    
     const [stats] = useState({
         totalRevenue: 2500000,
         totalOrders: 1250,
@@ -121,10 +33,9 @@ const AdminPanel = () => {
     });
 
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'orders', label: 'Siparişler', icon: ShoppingCart },
         { id: 'products', label: 'Ürünler', icon: Package },
         { id: 'categories', label: 'Kategoriler', icon: FolderIcon },
-        { id: 'orders', label: 'Siparişler', icon: ShoppingCart },
         { id: 'customers', label: 'Müşteriler', icon: Users },
         { id: 'settings', label: 'Ayarlar', icon: Settings }
     ];
@@ -184,19 +95,12 @@ const AdminPanel = () => {
 
             {/* Main Content */}
             <main className="flex-1 p-6">
-                {activeTab === 'dashboard' && <DashboardTab
-                    stats={stats}
-                    orders={orders}
-                    getStatusColor={getStatusColor}
-                    getStatusText={getStatusText}
-                />}
                 {activeTab === 'products' && <ProductsTab
                     
 
                 />}
                 {activeTab === 'orders' && <OrdersTab
                     Search={Search}
-                    orders={orders}
                     getStatusColor={getStatusColor}
                 />}
                 {activeTab === "customers" && <CustomersTab/>}

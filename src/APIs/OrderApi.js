@@ -128,3 +128,40 @@ export const fetchOrdersByUserId=async(tokenHeader)=>{
         return { error: true, status: 500, message: "Sunucuya bağlanırken bir hata oluştu." };
     }
 };
+export const fetchAllOrders=async(tokenHeader)=>{
+    try {
+        if (!tokenHeader) {
+            return { error: true, status: 401, message: "Yetkilendirme başlığı bulunamadı." };
+        }
+
+        const headers = {
+            'Authorization': tokenHeader,
+            'Content-Type': 'application/json'
+        };
+        
+        const response = await fetch(`${BASE_URL}/siparis`, {
+            method: 'GET',
+            headers: headers
+        });
+        if (!response.ok) {
+            const errorStatus = response.status;
+            let errorMessage = `Siparişler yüklenemedi: ${errorStatus}`;
+
+            if (errorStatus === 401) {
+                errorMessage = "Giriş yapmanız gerekiyor. Token süresi dolmuş veya geçersiz.";
+            } else if (errorStatus === 403) {
+                errorMessage = "Bu işlemi yapmaya yetkiniz yok.";
+            } else if (errorStatus === 404) {
+                errorMessage = "Siparişler bulunamadı.";
+            }
+            return { error: true, status: errorStatus, message: errorMessage };
+        }
+
+        const data = await response.json();
+        return { error: false, data: data };
+
+    } catch (error) {
+        console.error("fetchKullanici API çağrısı sırasında bir hata oluştu:", error.message);
+        return { error: true, status: 500, message: "Sunucuya bağlanırken bir hata oluştu." };
+    }
+};

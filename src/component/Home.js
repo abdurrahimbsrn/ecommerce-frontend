@@ -169,7 +169,7 @@ const Home = () => {
                 <div
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
-                  className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 group"
+                  className="bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105 group border-2 border-transparent border-blue-500"
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {

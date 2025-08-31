@@ -174,24 +174,6 @@ const CustomersTab = ({ getHeadersToken, apiClient }) => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     İletişim
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Şehir
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Sipariş Sayısı
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Toplam Harcama
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Durum
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Üyelik Tarihi
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    İşlemler
-                                </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -218,72 +200,7 @@ const CustomersTab = ({ getHeadersToken, apiClient }) => {
                                             {customer.phone}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                        <div className="flex items-center">
-                                            <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                                            {customer.city}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center text-sm text-gray-900">
-                                            <ShoppingBag className="w-4 h-4 mr-2 text-gray-400" />
-                                            {customer.totalOrders}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                                        {customer.totalSpent.toLocaleString('tr-TR')}₺
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <select
-                                            value={customer.status}
-                                            onChange={(e) => handleStatusChange(customer.id, e.target.value)}
-                                            className={`px-2 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 ${getStatusColor(customer.status)}`}
-                                        >
-                                            <option value="active">Aktif</option>
-                                            <option value="inactive">Pasif</option>
-                                            <option value="banned">Engellenmiş</option>
-                                        </select>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                        <div className="flex items-center">
-                                            <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                                            {customer.joinDate}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <div className="flex items-center space-x-2">
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedCustomer(customer);
-                                                    setShowCustomerModal(true);
-                                                }}
-                                                className="text-blue-600 hover:text-blue-700"
-                                                title="Düzenle"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                className="text-green-600 hover:text-green-700"
-                                                title="Detay Görüntüle"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                className={customer.status === 'banned' ? "text-green-600 hover:text-green-700" : "text-orange-600 hover:text-orange-700"}
-                                                title={customer.status === 'banned' ? "Engeli Kaldır" : "Engelle"}
-                                                onClick={() => handleStatusChange(customer.id, customer.status === 'banned' ? 'active' : 'banned')}
-                                            >
-                                                {customer.status === 'banned' ? <UserCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteCustomer(customer.id)}
-                                                className="text-red-600 hover:text-red-700"
-                                                title="Sil"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
+                                    
                                 </tr>
                             ))}
                         </tbody>
